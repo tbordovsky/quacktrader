@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "montecarlo"
+version = "0.1.0"
+description = ""
+authors = ["Travis Bordovsky <travis.bordovsky@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pandas = "^1.5.1"
+matplotlib = "^3.6.2"
+pandas-datareader = "^0.10.0"
+yfinance = "^0.1.85"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

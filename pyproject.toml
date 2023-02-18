@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "quacktrader"
+version = "0.1.0"
+description = ""
+authors = ["Travis Bordovsky <travis.bordovsky@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+tda-api = "^1.6.0"
+finta = "^1.3"
+yfinance = "^0.1.72"
+Backtesting = "^0.3.3"
+optopsy = "^2.0.1"
+scipy = "^1.9.3"
+seaborn = "^0.12.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
