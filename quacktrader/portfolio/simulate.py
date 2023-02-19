@@ -47,7 +47,6 @@ retirement_401k = Traditional401K(
     composition = {"^SPX": 100})
 retirement_401k.with_income(FixedIncome(payment=788.46, credit_period=is_friday_biweekly).until(retirement_date))
 retirement_401k.with_expected_return(SimpleReturns(annualized_return=.10, credit_period=is_trading_day_2023))
-disburse()
 # todo: account for company match
 
 rsu_holdings = InvestmentAccount(
