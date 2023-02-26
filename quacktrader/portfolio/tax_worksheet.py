@@ -7,6 +7,7 @@ from typing import List, Tuple
 class TaxWorksheet:
     """Based on Federal Tax Form 1040"""
     wages: float = 0
+    w2_withholdings: float = 0
     interest: float = 0
     dividends: float = 0
     ira_distributions: float = 0
@@ -14,7 +15,6 @@ class TaxWorksheet:
     social_security_benefits: float = 0
     capital_gains: float = 0
     deductions: float = 12550
-    w2_withholdings: float = 0
         
 
 federal_tax_brackets_2023: List[Tuple[float]] = [

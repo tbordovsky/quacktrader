@@ -112,14 +112,14 @@ trust_fund.with_expected_return(SimpleReturns(annualized_return=.10, credit_peri
 portfolio = Portfolio()
 [portfolio.with_account(account) for account in [
     checking,
-    hsa_fidelity,
-    hsa_homedepot,
-    retirement_401k,
-    rsu_holdings,
-    roth_ira,
-    traditional_ira,
-    taxable_fidelity,
-    taxable_tda,
+    # hsa_fidelity,
+    # hsa_homedepot,
+    # retirement_401k,
+    # rsu_holdings,
+    # roth_ira,
+    # traditional_ira,
+    # taxable_fidelity,
+    # taxable_tda,
     # trust_fund
     ]]
 

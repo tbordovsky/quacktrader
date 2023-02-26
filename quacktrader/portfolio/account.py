@@ -12,22 +12,21 @@ class Account(metaclass=abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls, subclass):
         return (hasattr(subclass, 'name')
+            and hasattr(subclass, 'initial_deposit_amount')
             and hasattr(subclass, 'composition')
+            and hasattr(subclass, 'simulate') 
+            and callable(subclass.simulate)
             and hasattr(subclass, 'assess') 
             and callable(subclass.assess)
             and hasattr(subclass, 'with_income') 
             and callable(subclass.with_income)
             and hasattr(subclass, 'with_expense')
             and callable(subclass.with_expense)
-            and hasattr(subclass, 'with_transfer')
-            and callable(subclass.with_transfer)
-            and hasattr(subclass, 'get_balance_sheet')
-            and callable(subclass.get_balance_sheet)
             or NotImplemented)
 
     @abc.abstractmethod
     def assess(self, start_date: date) -> Tuple[date, ...]:
-        """Assess revenue and tax liability from the given start date"""
+        """Assess incremental accounting information for a given date."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -40,12 +39,6 @@ class Account(metaclass=abc.ABCMeta):
         """Register a new expense model"""
         raise NotImplementedError
 
-
-    @abc.abstractmethod
-    def with_transfer(self, transfer: FixedIncome):
-        """Register a new transfer model"""
-        raise NotImplementedError
-
     @abc.abstractmethod
     def get_balance_sheet(self, start_date: date, n_days: int) -> DataFrame:
         """Get the account's balance sheet as a DataFrame"""
@@ -53,7 +46,7 @@ class Account(metaclass=abc.ABCMeta):
 
     def take(self, start_date: date, n_days: int) -> List[Tuple]:
         result = []
-        balance: Generator = self.assess(start_date)
+        balance: Generator = self.simulate(start_date)
         try:
             for n in range(n_days):
                 result.append(next(balance))
@@ -62,11 +55,11 @@ class Account(metaclass=abc.ABCMeta):
         return result
 
 
-def transfer(amount: float, transfer_period: Callable[[date], bool], source: Account, destination: Account, start_date: date = None, end_date: date = None):
-    modified_transfer_period = transfer_period
-    if start_date:
-        modified_transfer_period = lambda current_date: transfer_period(current_date) and partial(after, current_date)(start_date)
-    if end_date:
-        modified_transfer_period = lambda current_date: transfer_period(current_date) and partial(before, current_date)(end_date)
-    source.with_transfer(FixedExpense(amount, modified_transfer_period))
-    destination.with_transfer(FixedIncome(amount, modified_transfer_period))
+# def transfer(amount: float, transfer_period: Callable[[date], bool], source: Account, destination: Account, start_date: date = None, end_date: date = None):
+#     modified_transfer_period = transfer_period
+#     if start_date:
+#         modified_transfer_period = lambda current_date: transfer_period(current_date) and partial(after, current_date)(start_date)
+#     if end_date:
+#         modified_transfer_period = lambda current_date: transfer_period(current_date) and partial(before, current_date)(end_date)
+#     source.with_transfer(FixedExpense(amount, modified_transfer_period))
+#     destination.with_transfer(FixedIncome(amount, modified_transfer_period))

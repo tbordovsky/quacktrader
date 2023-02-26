@@ -70,13 +70,14 @@ class FixedExpense(Payment):
         self.debit_period = lambda current_date: debit_period(current_date) and partial(before, current_date)(end_date)
         return self
 
-class RequiredMinimumDistribution(Payment):
-    def __init__(self, debit_period: Callable[[date], bool]):
-        self.debit_period = debit_period
+# class RequiredMinimumDistribution(Payment):
+#     def __init__(self, debit_period: Callable[[date], bool], birthday: date):
+#         self.debit_period = debit_period
+#         self.birthday = birthday
 
-    def assess_revenue(self, current_date: date, current_balance: float) -> float:
-        age = current_date - birthday
-        return calculate_required_min_distribution(age, current_balance, debit_period) if age >= 72 and self.debit_period(current_date) else 0
+#     def assess_revenue(self, current_date: date, current_balance: float) -> float:
+#         age = current_date - self.birthday
+#         return calculate_required_minimum_distribution(age, current_balance, self.debit_period) if age >= 72 and self.debit_period(current_date) else 0
 
 
 
@@ -137,7 +138,7 @@ class CompoundInterest(CapitalGains):
         self.interest_rate = interest_rate
         self.compounding_period = compounding_period
 
-    def assess_revenue(self, current_balance: float, current_date: date) -> float:
+    def assess_revenue(self, current_date: date, current_balance: float) -> float:
         return max(self.interest_rate * current_balance, 0) if self.compounding_period(current_date) else 0
 
 class SimpleReturns(CapitalGains):
@@ -149,7 +150,7 @@ class SimpleReturns(CapitalGains):
         self.credit_period = credit_period
         self._return_per_period = periodize_annual_returns(annualized_return, credit_period)
 
-    def assess_revenue(self, current_balance: float, current_date: date) -> float:
+    def assess_revenue(self, current_date: date, current_balance: float) -> float:
         return max(self._return_per_period * current_balance, 0) if self.credit_period(current_date) else 0
 
 class SimpleDividends(CapitalGains):
@@ -161,7 +162,7 @@ class SimpleDividends(CapitalGains):
         self.payout_ratio = payout_ratio
         self.credit_period = credit_period
 
-    def assess_revenue(self, current_balance: float, current_date: date) -> float:
+    def assess_revenue(self, current_date: date, current_balance: float) -> float:
         return max(self.payout_ratio * current_balance, 0) if self.credit_period(current_date) else 0
 
 
@@ -193,6 +194,12 @@ def is_annual(date: date) -> bool:
     Assess annually, at the end of the year.
     """
     return date.isocalendar()[1] == 52 and date.isocalendar()[2] == 1
+
+def is_first_of_the_year(date: date) -> bool:
+    """
+    Assess annually, at the first of the year.
+    """
+    return date.timetuple().tm_yday == 1
 
 def is_annual_in_may(date: date) -> bool:
     return date.isocalendar()[1] == 20 and date.isocalendar()[2] == 4
