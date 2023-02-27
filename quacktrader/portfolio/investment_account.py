@@ -70,32 +70,30 @@ class TraditionalIRA(InvestmentAccount):
         self.composition = composition
         self.income_models: List[Payment] = []
         self.expense_models: List[Payment] = []
-        self.distribution_models: List[Payment] = []
         self.return_model: CompoundInterest = None
         self.dividends_model: SimpleDividends = SimpleDividends()
 
-    def with_transfer(self, transfer: Payment):
-        self.income_models.append(transfer) if isinstance(transfer, FixedIncome) else self.distribution_models.append(transfer)
-
-    def with_required_min_distributions(self, transfer: FixedExpense):
-        self.distribution_models.append(transfer)
+    def simulate(self, date: date) -> Tuple[date, ...]:
+        balance = self.initial_deposit_amount
+        while True:
+            assessment = self.assess(date, balance)
+            balance = assessment.balance
+            yield astuple(assessment)
+            date += timedelta(days=1)
 
     # todo: contributions are made from post-tax income, so they have to be deducted later
-    def assess(self, current_date: date) -> Tuple[date, ...]:
-        balance = self.initial_deposit_amount
-        # todo: if date is less than initial deposit date yield 0
-        while True:
-            dividends = self.dividends_model.assess_revenue(current_date, balance)
-            capital_gains = self.return_model.assess_revenue(current_date, balance)
-            ira_contributions = sum([revenue.assess_revenue(current_date) for revenue in self.income_models])
-            ira_distributions = sum([revenue.assess_revenue(current_date) for revenue in self.distribution_models])
-            balance += capital_gains + dividends + ira_contributions + ira_distributions
-            yield current_date, balance, ira_contributions, -ira_distributions
-            current_date += timedelta(days = 1)
+    def assess(self, date: date, balance: float) -> Assessment:
+        income = sum([revenue.assess_revenue(date) for revenue in self.income_models])
+        expenses = sum([expense_model.assess_revenue(date) for expense_model in self.expense_models])
+        dividends = self.dividends_model.assess_revenue(date, balance)
+        capital_gains = self.return_model.assess_revenue(date, balance)
+        balance += income + expenses + dividends + capital_gains
+        return Assessment(date=date, balance=balance, income=income, expenses=expenses, dividends=dividends, capital_gains=capital_gains)
     
-    def get_balance_sheet(self, start_date: date, n_days: int) -> DataFrame:
+    def get_balance_sheet(self, simulation: List[Tuple]) -> DataFrame:
+        raise NotImplementedError("Fix the column names first")
         balance_sheet = DataFrame(
-            data=self.take(start_date, n_days),
+            data=simulation,
             columns=['date', 'balance', 'ira_contributions', 'ira_distributions'])
         balance_sheet.set_index('date', inplace=True)
         balance_sheet.index = pandas.to_datetime(balance_sheet.index)
@@ -104,7 +102,6 @@ class TraditionalIRA(InvestmentAccount):
 
 class HealthSavingsAccount(TraditionalIRA):
     pass
-
 
 class Traditional401K(TraditionalIRA):
     pass

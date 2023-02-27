@@ -50,6 +50,7 @@ class DepositAccount(Account):
         return Assessment(date=date, balance=balance, income=income, w2_withholdings=w2_withholdings, expenses=expenses, interest=interest, social_security_benefits=social_security_benefits)
 
     def get_balance_sheet(self, simulation: List[Tuple]) -> DataFrame:
+        raise NotImplementedError("Fix the column names first")
         balance_sheet = DataFrame(
             data=simulation,
             columns=['date', 'balance', 'income', 'w2_withholdings', 'expenses', 'interest', 'social_security_benefits'])

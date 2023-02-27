@@ -20,6 +20,7 @@ class Portfolio:
     def __init__(self):
         self._accounts: Set[Account] = set()
         self._transfer_models: List[Transfer] = []
+        self._ira_distribution_models: List[Transfer] = []
 
     def with_account(self, account: Account):
         self._accounts.add(account)
@@ -38,6 +39,10 @@ class Portfolio:
     def with_transfer(self, transfer: Transfer):
         """Register a new transfer model"""
         self._transfer_models.append(transfer)
+
+    def with_ira_distribution(self, transfer: Transfer):
+        """Register a new IRA distribution model"""
+        self._ira_distribution_models.append(transfer)
 
     class AccountContainer:
         def __init__(self, account: Account):
@@ -73,12 +78,11 @@ class Portfolio:
             for account in accounts_by_name.values():
                 assessment: Assessment = account.assess(date, account.balance)
                 account.balance += sum([assessment.income, assessment.expenses, assessment.interest, assessment.social_security_benefits, assessment.dividends,
-                                        assessment.ira_distributions, assessment.annuities, assessment.capital_gains])
+                                        assessment.annuities, assessment.capital_gains])
                 wages += assessment.income + assessment.w2_withholdings
                 w2_withholdings += assessment.w2_withholdings
                 social_security_benefits += assessment.social_security_benefits
                 dividends += assessment.dividends
-                ira_distributions += assessment.ira_distributions
                 annuities += assessment.annuities
                 capital_gains += assessment.capital_gains
                 # deductions += getDeductions()?
@@ -90,6 +94,14 @@ class Portfolio:
                 source.balance -= transfer_amount
                 destination.balance += transfer_amount
 
+            for ira_distribution in self._ira_distribution_models:
+                source = accounts_by_name.get(ira_distribution.source.name)
+                destination = accounts_by_name.get(ira_distribution.destination.name)
+                distribution_amount = ira_distribution.assess_revenue(date)
+                source.balance -= distribution_amount
+                destination.balance += distribution_amount
+                ira_distributions += distribution_amount
+
             if is_first_of_the_year(date):
                 tax_worksheet = TaxWorksheet(wages=wages,
                                              w2_withholdings=w2_withholdings,
@@ -97,7 +109,7 @@ class Portfolio:
                                              dividends=dividends,
                                              ira_distributions=ira_distributions,
                                              annuities=annuities,
-                                             capital_gains=capital_gains) # todo: use realized capital gains instead
+                                             capital_gains=0) # todo: use realized capital gains instead
                 wages, w2_withholdings, social_security_benefits, dividends, ira_distributions, annuities, capital_gains = 0, 0, 0, 0, 0, 0, 0
                 taxes = calculate_tax(tax_worksheet)
                 primary_account.balance -= taxes
@@ -112,6 +124,7 @@ class Portfolio:
             columns=['date'] + [account.name for account in self._accounts] + ['taxes'])
         balance_sheet.set_index('date', inplace=True)
         balance_sheet.index = pandas.to_datetime(balance_sheet.index)
+        balance_sheet['total'] = balance_sheet[[account.name for account in self._accounts]].sum(axis=1)
         return balance_sheet
 
     def tabulate_composition(self, balance_sheet: DataFrame) -> Series:

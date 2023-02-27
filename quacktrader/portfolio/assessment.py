@@ -12,6 +12,5 @@ class Assessment:
     interest: float = 0
     social_security_benefits: float = 0
     dividends: float = 0
-    ira_distributions: float = 0
     annuities: float = 0
     capital_gains: float = 0
