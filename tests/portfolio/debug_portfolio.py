@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from quacktrader.portfolio.deposit_account import DepositAccount
 from quacktrader.portfolio.investment_account import HealthSavingsAccount, InvestmentAccount, Traditional401K, TraditionalIRA
-from quacktrader.portfolio.portfolio import Portfolio, Transfer
+from quacktrader.portfolio.portfolio import Portfolio, RequiredMininumDistribution, Transfer
 from quacktrader.portfolio.revenue import FixedExpense, FixedIncome, Salary, CompoundInterest, SimpleDividends, SimpleReturns, is_annual_in_may, is_first_of_the_month, is_first_of_the_year, is_friday_biweekly, is_monday_biweekly, is_monthly_on_the_25th, is_monthly_on_the_8th, is_quarterly, is_trading_day_2023
 from matplotlib import pyplot
 import pandas
@@ -96,7 +96,7 @@ taxable_tda.with_expected_return(SimpleReturns(annualized_return=.10, credit_per
 
 trust_fund = InvestmentAccount(
     name = "trust_fund",
-    initial_deposit_amount=1000000,
+    initial_deposit_amount = 1000000,
     initial_deposit_date = start_date,
     composition = {"^SPX": 100})
 trust_fund.with_expected_return(SimpleReturns(annualized_return=.10, credit_period=is_trading_day_2023))
@@ -139,10 +139,8 @@ portfolio.with_transfer(
              destination=espp_homedepot)
     .until(retirement_date))
 
-# todo: this amount depends on the accumulated balance
-# transfer(amount=180000, transfer_period=is_annual, source=traditional_ira, destination=checking, start_date=retirement_date)
 portfolio.with_ira_distribution(
-    Transfer(payment=180000, 
+    RequiredMininumDistribution(birthday=date(1993, 8, 15), 
              transfer_period=is_first_of_the_year,
              source=traditional_ira,
              destination=checking)
@@ -155,4 +153,4 @@ pyplot.show()
 pandas.set_option('display.max_rows', 500)
 # print(balance_sheet[330:366])
 balance_sheet = balance_sheet.resample('1Y').first()
-print(balance_sheet.tail(20))
+print(balance_sheet.head(50))

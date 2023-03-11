@@ -6,7 +6,7 @@ from matplotlib import pyplot
 
 from quacktrader.portfolio.account import Account
 from quacktrader.portfolio.assessment import Assessment
-from quacktrader.portfolio.revenue import FixedIncome, is_first_of_the_year
+from quacktrader.portfolio.revenue import FixedIncome, calculate_required_minimum_distribution, count_annual_occurrences, is_first_of_the_year
 from quacktrader.portfolio.tax_worksheet import TaxWorksheet, calculate_tax
 
 class Transfer(FixedIncome):
@@ -16,11 +16,35 @@ class Transfer(FixedIncome):
         self.source = source
         self.destination = destination
 
+class IraDistribution(Transfer):
+    def __init__(self, payment: float, transfer_period: Callable[[date], bool], source: Account, destination: Account):
+        self.payment = payment
+        self.credit_period = transfer_period
+        self.source = source
+        self.destination = destination
+
+    def assess(self, current_date: date, current_balance: float) -> float:
+        return self.payment if self.credit_period(current_date) else 0
+
+class RequiredMininumDistribution(IraDistribution):
+    def __init__(self, birthday: date, transfer_period: Callable[[date], bool], source: Account, destination: Account):
+        self.birthday = birthday
+        self.credit_period = transfer_period
+        self.source = source
+        self.destination = destination
+        self.annual_withdrawal_occurrences = count_annual_occurrences(transfer_period)
+        self.starting(self.birthday + timedelta(days=72*365))
+
+    def assess(self, current_date: date, current_balance: float) -> float:
+        age = current_date.year - self.birthday.year
+        return calculate_required_minimum_distribution(age, current_balance, self.annual_withdrawal_occurrences) if self.credit_period(current_date) else 0
+        
+
 class Portfolio:
     def __init__(self):
         self._accounts: Set[Account] = set()
         self._transfer_models: List[Transfer] = []
-        self._ira_distribution_models: List[Transfer] = []
+        self._ira_distribution_models: List[IraDistribution] = []
 
     def with_account(self, account: Account):
         self._accounts.add(account)
@@ -87,20 +111,20 @@ class Portfolio:
                 capital_gains += assessment.capital_gains
                 # deductions += getDeductions()?
 
+            for ira_distribution in self._ira_distribution_models:
+                source = accounts_by_name.get(ira_distribution.source.name)
+                destination = accounts_by_name.get(ira_distribution.destination.name)
+                distribution_amount = ira_distribution.assess(date, source.balance)
+                source.balance -= distribution_amount
+                destination.balance += distribution_amount
+                ira_distributions += distribution_amount
+
             for transfer in self._transfer_models:
                 source = accounts_by_name.get(transfer.source.name)
                 destination = accounts_by_name.get(transfer.destination.name)
                 transfer_amount = transfer.assess_revenue(date)
                 source.balance -= transfer_amount
                 destination.balance += transfer_amount
-
-            for ira_distribution in self._ira_distribution_models:
-                source = accounts_by_name.get(ira_distribution.source.name)
-                destination = accounts_by_name.get(ira_distribution.destination.name)
-                distribution_amount = ira_distribution.assess_revenue(date)
-                source.balance -= distribution_amount
-                destination.balance += distribution_amount
-                ira_distributions += distribution_amount
 
             if is_first_of_the_year(date):
                 tax_worksheet = TaxWorksheet(wages=wages,
@@ -112,9 +136,9 @@ class Portfolio:
                                              capital_gains=0) # todo: use realized capital gains instead
                 wages, w2_withholdings, social_security_benefits, dividends, ira_distributions, annuities, capital_gains = 0, 0, 0, 0, 0, 0, 0
                 taxes = calculate_tax(tax_worksheet)
-                primary_account.balance -= taxes
+                primary_account.balance += taxes
 
-            yield (date,) + tuple([account.balance for account in accounts_by_name.values()]) + (-taxes,)
+            yield (date,) + tuple([account.balance for account in accounts_by_name.values()]) + (taxes,)
             date += timedelta(days=1)
             taxes = 0
 

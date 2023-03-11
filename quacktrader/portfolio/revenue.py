@@ -264,9 +264,7 @@ RMD = [27.4, 26.5, 25.6, 24.7, 23.8, 22.9, 22.0, 21.2, 20.3, 19.5,  # age 70-79
         6.3,  5.9,  5.5,  5.2,  4.9,  4.5,  4.2,  3.9,  3.7,  3.4,  # age 100+
         3.1,  2.9,  2.6,  2.4,  2.1,  1.9,  1.9,  1.9,  1.9,  1.9]
 
-def calculate_required_minimum_distribution(age: int, account_balance: float, credit_period: Callable[[date], bool]) -> float:
+def calculate_required_minimum_distribution(age: int, account_balance: float, annual_withdrawal_occurrences: int) -> float:
     withdrawal_factor = RMD[age - 72]
     annual_withdrawal = account_balance / withdrawal_factor
-    annual_withdrawal_occurrences = count_annual_occurrences(credit_period)
     return annual_withdrawal / annual_withdrawal_occurrences
-    

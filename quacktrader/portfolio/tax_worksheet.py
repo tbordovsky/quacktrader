@@ -60,7 +60,7 @@ def calculate_tax(tax_worksheet: TaxWorksheet) -> float:
     total_other_payments_and_refundable_credits = 0 # todo
     total_payments = total_withholdings + previous_year_tax_payments + total_other_payments_and_refundable_credits
     amount_owed = total_tax - total_payments
-    return amount_owed
+    return -amount_owed
 
 def calculate_income_tax(taxable_income: float) -> float:
     base_taxes = get_base_taxes(federal_tax_brackets_2023)
