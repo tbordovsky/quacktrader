@@ -1,6 +1,8 @@
+from collections import deque
 from datetime import date, timedelta
+import math
 import pprint
-from typing import Callable, Dict, Generator, List, Set, Tuple
+from typing import Callable, Deque, Dict, Generator, List, Set, Tuple
 from pandas import pandas, DataFrame, Series
 from matplotlib import pyplot
 
@@ -72,8 +74,40 @@ class Portfolio:
         def __init__(self, account: Account):
             self.name: str = account.name
             self.balance: float = account.initial_deposit_amount
-            self.simulation = List[Tuple]
             self.assess = account.assess
+            self.capital_gains_queue: Deque[float] = deque(maxlen=365)
+            self.short_term_capital_gains: float = 0
+            self.long_term_capital_gains: float = 0
+        
+        def accumulate_capital_gains(self, capital_gains: float):
+            """Assuming capital gains for an account is assessed every day"""
+            if (len(self.capital_gains_queue) == self.capital_gains_queue.maxlen):
+                capital_gains_matured = self.capital_gains_queue.pop()
+                self.long_term_capital_gains += capital_gains_matured
+                self.short_term_capital_gains = max(self.short_term_capital_gains - capital_gains_matured, 0)
+            self.capital_gains_queue.append(capital_gains)
+            self.short_term_capital_gains += capital_gains
+
+        def realize_capital_gains(self, sale_amount: float) -> float:
+            if (sale_amount > 0):
+                overdraw = min(self.long_term_capital_gains + self.short_term_capital_gains - sale_amount, 0)
+                self.long_term_capital_gains -= sale_amount
+                if (self.long_term_capital_gains < 0):
+                    self.short_term_capital_gains += self.long_term_capital_gains
+                    self.long_term_capital_gains = 0
+                    self.short_term_capital_gains = max(self.short_term_capital_gains, 0)
+                return sale_amount + overdraw
+            else:
+                return 0
+
+        def apply_transfer(self, transfer_amount) -> float:
+            actual_transfer_amount = 0
+            if (transfer_amount != 0):
+                overdraw = min(self.balance + transfer_amount, 0)
+                actual_transfer_amount = transfer_amount - overdraw
+                self.balance += actual_transfer_amount
+            return actual_transfer_amount
+
 
     def take(self, start_date: date, n_days: int) -> List[Tuple]:
         result = []
@@ -108,7 +142,7 @@ class Portfolio:
                 social_security_benefits += assessment.social_security_benefits
                 dividends += assessment.dividends
                 annuities += assessment.annuities
-                capital_gains += assessment.capital_gains
+                account.accumulate_capital_gains(assessment.capital_gains)
                 # deductions += getDeductions()?
 
             for ira_distribution in self._ira_distribution_models:
@@ -123,8 +157,9 @@ class Portfolio:
                 source = accounts_by_name.get(transfer.source.name)
                 destination = accounts_by_name.get(transfer.destination.name)
                 transfer_amount = transfer.assess_revenue(date)
-                source.balance -= transfer_amount
-                destination.balance += transfer_amount
+                actual_transfer_amount = -source.apply_transfer(-transfer_amount)
+                destination.apply_transfer(actual_transfer_amount)
+                capital_gains += source.realize_capital_gains(actual_transfer_amount)
 
             if is_first_of_the_year(date):
                 tax_worksheet = TaxWorksheet(wages=wages,
@@ -133,7 +168,7 @@ class Portfolio:
                                              dividends=dividends,
                                              ira_distributions=ira_distributions,
                                              annuities=annuities,
-                                             capital_gains=0) # todo: use realized capital gains instead
+                                             capital_gains=capital_gains)
                 wages, w2_withholdings, social_security_benefits, dividends, ira_distributions, annuities, capital_gains = 0, 0, 0, 0, 0, 0, 0
                 taxes = calculate_tax(tax_worksheet)
                 primary_account.balance += taxes

@@ -40,8 +40,8 @@ def calculate_tax(tax_worksheet: TaxWorksheet) -> float:
     taxable_annuities = 0 # todo: implement taxable_annuitites for after-tax pension contributions
     social_security_benefits = 0 # todo
     taxable_social_security_benefits = tax_worksheet.social_security_benefits
-    capital_gain = tax_worksheet.capital_gains # todo: implement calculation from long-term and short-term gains using 1040 Schedule D
-    total_income = wages + taxable_interest + ordinary_dividends + taxable_ira_distributions + taxable_annuities + taxable_social_security_benefits + capital_gain
+    capital_gains = tax_worksheet.capital_gains # todo: implement calculation from long-term and short-term gains using 1040 Schedule D
+    total_income = wages + taxable_interest + ordinary_dividends + taxable_ira_distributions + taxable_annuities + taxable_social_security_benefits + capital_gains
     other_income = 0 # todo
     adjusted_gross_income = total_income - other_income
     deduction = tax_worksheet.deductions

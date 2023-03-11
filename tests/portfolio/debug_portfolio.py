@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from quacktrader.portfolio.deposit_account import DepositAccount
 from quacktrader.portfolio.investment_account import HealthSavingsAccount, InvestmentAccount, Traditional401K, TraditionalIRA
 from quacktrader.portfolio.portfolio import Portfolio, RequiredMininumDistribution, Transfer
-from quacktrader.portfolio.revenue import FixedExpense, FixedIncome, Salary, CompoundInterest, SimpleDividends, SimpleReturns, is_annual_in_may, is_first_of_the_month, is_first_of_the_year, is_friday_biweekly, is_monday_biweekly, is_monthly_on_the_25th, is_monthly_on_the_8th, is_quarterly, is_trading_day_2023
+from quacktrader.portfolio.revenue import FixedExpense, FixedIncome, Salary, CompoundInterest, SimpleDividends, SimpleReturns, is_annual_in_may, is_first_of_the_month, is_first_of_the_year, is_friday_biweekly, is_monday_biweekly, is_monthly_on_the_25th, is_monthly_on_the_8th, is_quarterly, is_semiannual, is_trading_day_2023
 from matplotlib import pyplot
 import pandas
 
@@ -130,7 +130,6 @@ portfolio.with_transfer(
              destination=traditional_ira)
     .until(retirement_date))
 
-# todo: transfer everything out semiannually, may require balance aware transfers
 # todo: apply discount to semiannual rolling sum of contributions
 portfolio.with_transfer(
     Transfer(payment=826.92, 
@@ -139,10 +138,25 @@ portfolio.with_transfer(
              destination=espp_homedepot)
     .until(retirement_date))
 
+# todo: transfer everything out semiannually, may require balance aware transfers
+portfolio.with_transfer(
+    Transfer(payment=12000,
+             transfer_period=is_semiannual,
+             source=espp_homedepot,
+             destination=checking)
+    .until(retirement_date))
+
 portfolio.with_ira_distribution(
     RequiredMininumDistribution(birthday=date(1993, 8, 15), 
              transfer_period=is_first_of_the_year,
              source=traditional_ira,
+             destination=checking)
+    .starting(retirement_date))
+
+portfolio.with_transfer(
+    Transfer(payment=1000, 
+             transfer_period=is_first_of_the_month,
+             source=taxable_fidelity,
              destination=checking)
     .starting(retirement_date))
 
